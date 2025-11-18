@@ -13,12 +13,12 @@ y_piros_start = 1
 init_piros_hossz = 4
 init_piros_min_szog = 0
 init_piros_max_szog = 90
-init_piros_szog = (init_piros_min_szog + init_piros_max_szog) / 2
+init_piros_szog = (init_piros_min_szog + init_piros_max_szog) / 2 
 
 init_kek_hossz = 3
 init_kek_min_szog = -90 
-init_kek_max_szog = 0   
-init_kek_szog_REL = (init_kek_min_szog + init_kek_max_szog) / 2
+init_kek_max_szog = 0 
+init_kek_szog_REL = (init_kek_min_szog + init_kek_max_szog) / 2 
 
 p_hossz_aktualis = init_piros_hossz
 k_hossz_aktualis = init_kek_hossz
@@ -28,7 +28,7 @@ k_szog_REL_aktualis = init_kek_szog_REL
 click_pontok = [] 
 anim_obj = None 
 anim_pontok = [] 
-angle_data_list = []
+angle_data_list = [] 
 
 text_display = None
 
@@ -80,8 +80,7 @@ init_k_max_glob = init_piros_szog + init_kek_max_szog
 (x_k_min_init, y_k_min_init) = get_endpoint(x_joint_init, y_joint_init, init_kek_hossz, init_k_min_glob)
 (x_k_max_init, y_k_max_init) = get_endpoint(x_joint_init, y_joint_init, init_kek_hossz, init_k_max_glob)
 
-
-
+#vonalak
 line_piros, = ax.plot([x_piros_start, x_joint_init], [y_piros_start, y_joint_init], 
                       'r-', lw=3, label='Piros vonal', zorder=10)
 line_kek, = ax.plot([x_joint_init, x_kek_end_init], [y_joint_init, y_kek_end_init], 
@@ -94,6 +93,7 @@ line_kek_min, = ax.plot([x_joint_init, x_k_min_init], [y_joint_init, y_k_min_ini
 line_kek_max, = ax.plot([x_joint_init, x_k_max_init], [y_joint_init, y_k_max_init], 'b:', lw=1, zorder=5)
 line_munkavonal, = ax.plot([], [], 'g-', lw=2, zorder=8, label='Munkavonal')
 
+#munkaterület
 workspace_plot, = ax.plot([], [], marker=',', linestyle='None', visible=False) 
 workspace_patch = Polygon(np.array([]).reshape(0, 2), closed=True, color='lightgray', zorder=0, label='Munkaterület')
 ax.add_patch(workspace_patch)
@@ -110,7 +110,7 @@ ax.legend(unique_labels.values(), unique_labels.keys())
 
 ax_text.axis('off') 
 text_display = ax_text.text(0.05, 0.95, "", 
-                            fontsize=9,
+                            fontsize=9, 
                             va='top', 
                             wrap=True)
 
@@ -150,9 +150,10 @@ def update_plot(event):
         
         click_pontok = []
         line_munkavonal.set_data([], [])
-        if anim_obj:
+        
+        if anim_obj and anim_obj.event_source:
             anim_obj.event_source.stop()
-            anim_obj = None
+        anim_obj = None
         
     except ValueError:
         print("Hiba: Kérjük, érvényes számot adjon meg az összes mezőben.")
@@ -161,6 +162,7 @@ def update_plot(event):
     p_szog_aktualis = (p_min_szog + p_max_szog) / 2
     k_szog_REL_aktualis = (k_min_szog + k_max_szog) / 2
     
+    #A munkaterület és vonalak frissítése
     k_aktualis_szog_GLOBAL = p_szog_aktualis + k_szog_REL_aktualis
     (new_x_joint, new_y_joint) = get_endpoint(x_piros_start, y_piros_start, p_hossz, p_szog_aktualis)
     line_piros.set_data([x_piros_start, new_x_joint], [y_piros_start, new_y_joint])
@@ -248,6 +250,7 @@ def onclick(event):
         line_munkavonal.set_data([], [])
     fig.canvas.draw_idle()
 
+#Animáció
 def on_start_anim(event):
     global anim_obj, anim_pontok, angle_data_list
     
@@ -259,8 +262,7 @@ def on_start_anim(event):
     y_vals = np.linspace(click_pontok[0][1], click_pontok[1][1], 10)
     anim_pontok = list(zip(x_vals, y_vals))
     
-
-    angle_data_list = [] 
+    angle_data_list = []
     text_str = "Munkavonal szögei:\n\n"
     
     for i, (x, y) in enumerate(anim_pontok):
@@ -272,10 +274,11 @@ def on_start_anim(event):
             text_str += f"{i+1}. P: {p_szog:.1f}°, K: {k_szog_REL:.1f}°\n"
         else:
             text_str += f"{i+1}. Elérhetetlen\n"
-            
+
     text_display.set_text(text_str)
     
-    if anim_obj:
+
+    if anim_obj and anim_obj.event_source:
         anim_obj.event_source.stop()
         
     anim_obj = FuncAnimation(
@@ -322,7 +325,6 @@ def animate(frame):
 button.on_clicked(update_plot)
 button_start.on_clicked(on_start_anim) 
 fig.canvas.mpl_connect('button_press_event', onclick) 
-
 
 update_plot(None)
 
