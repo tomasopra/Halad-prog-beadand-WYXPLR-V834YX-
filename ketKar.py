@@ -13,12 +13,13 @@ y_piros_start = 1
 init_piros_hossz = 4
 init_piros_min_szog = 0
 init_piros_max_szog = 90
-init_piros_szog = (init_piros_min_szog + init_piros_max_szog) / 2 
+init_piros_szog = (init_piros_min_szog + init_piros_max_szog) / 2
 
 init_kek_hossz = 3
-init_kek_min_szog = -90 
+init_kek_min_szog = -90
 init_kek_max_szog = 0 
-init_kek_szog_REL = (init_kek_min_szog + init_kek_max_szog) / 2 
+init_kek_szog_REL = (init_kek_min_szog + init_kek_max_szog) / 2
+
 
 p_hossz_aktualis = init_piros_hossz
 k_hossz_aktualis = init_kek_hossz
@@ -55,8 +56,7 @@ def solve_ik(target_x, target_y):
     D = math.sqrt(D_squared)
     
     if D > L1 + L2 or D < abs(L1 - L2):
-        print(f"Figyelmeztetés: A ({target_x:.1f}, {target_y:.1f}) pont elérhetetlen.")
-        return None 
+        return None
     try:
         cos_theta2 = (D_squared - L1**2 - L2**2) / (2 * L1 * L2)
         if cos_theta2 > 1.0: cos_theta2 = 1.0
@@ -80,7 +80,6 @@ init_k_max_glob = init_piros_szog + init_kek_max_szog
 (x_k_min_init, y_k_min_init) = get_endpoint(x_joint_init, y_joint_init, init_kek_hossz, init_k_min_glob)
 (x_k_max_init, y_k_max_init) = get_endpoint(x_joint_init, y_joint_init, init_kek_hossz, init_k_max_glob)
 
-#vonalak
 line_piros, = ax.plot([x_piros_start, x_joint_init], [y_piros_start, y_joint_init], 
                       'r-', lw=3, label='Piros vonal', zorder=10)
 line_kek, = ax.plot([x_joint_init, x_kek_end_init], [y_joint_init, y_kek_end_init], 
@@ -93,11 +92,10 @@ line_kek_min, = ax.plot([x_joint_init, x_k_min_init], [y_joint_init, y_k_min_ini
 line_kek_max, = ax.plot([x_joint_init, x_k_max_init], [y_joint_init, y_k_max_init], 'b:', lw=1, zorder=5)
 line_munkavonal, = ax.plot([], [], 'g-', lw=2, zorder=8, label='Munkavonal')
 
-#munkaterület
+# munkaterület
 workspace_plot, = ax.plot([], [], marker=',', linestyle='None', visible=False) 
 workspace_patch = Polygon(np.array([]).reshape(0, 2), closed=True, color='lightgray', zorder=0, label='Munkaterület')
 ax.add_patch(workspace_patch)
-
 
 ax.set_title('Robotkar Szimuláció (Animációval)')
 ax.grid(True)
@@ -106,7 +104,6 @@ ax.margins(0.15)
 handles, labels = ax.get_legend_handles_labels()
 unique_labels = dict(zip(labels, handles))
 ax.legend(unique_labels.values(), unique_labels.keys()) 
-
 
 ax_text.axis('off') 
 text_display = ax_text.text(0.05, 0.95, "", 
@@ -162,7 +159,7 @@ def update_plot(event):
     p_szog_aktualis = (p_min_szog + p_max_szog) / 2
     k_szog_REL_aktualis = (k_min_szog + k_max_szog) / 2
     
-    #A munkaterület és vonalak frissítése
+    #A munkaterület és vonalak frissítése.
     k_aktualis_szog_GLOBAL = p_szog_aktualis + k_szog_REL_aktualis
     (new_x_joint, new_y_joint) = get_endpoint(x_piros_start, y_piros_start, p_hossz, p_szog_aktualis)
     line_piros.set_data([x_piros_start, new_x_joint], [y_piros_start, new_y_joint])
@@ -235,6 +232,7 @@ def update_plot(event):
     ax.autoscale_view() 
     fig.canvas.draw_idle()
 
+
 def onclick(event):
     global click_pontok
     if event.inaxes != ax:
@@ -250,34 +248,75 @@ def onclick(event):
         line_munkavonal.set_data([], [])
     fig.canvas.draw_idle()
 
-#Animáció
 def on_start_anim(event):
     global anim_obj, anim_pontok, angle_data_list
     
     if len(click_pontok) < 2:
-        print("Animációs hiba: Nincs munkavonal kijelölve (kattints kétszer a grafikonra).")
+        print("Animációs hiba: Nincs munkavonal kijelölve.")
+        text_display.set_text("Animációs hiba:\nNincs munkavonal kijelölve.\n(Kattints kétszer a grafikonra)")
+        fig.canvas.draw_idle()
         return
         
     x_vals = np.linspace(click_pontok[0][0], click_pontok[1][0], 10)
     y_vals = np.linspace(click_pontok[0][1], click_pontok[1][1], 10)
     anim_pontok = list(zip(x_vals, y_vals))
     
-    angle_data_list = []
-    text_str = "Munkavonal szögei:\n\n"
+    angle_data_list = [] 
+    is_valid = True
     
-    for i, (x, y) in enumerate(anim_pontok):
-        angles = solve_ik(x, y)
-        angle_data_list.append(angles)
-        
-        if angles:
-            p_szog, k_szog_REL = angles
-            text_str += f"{i+1}. P: {p_szog:.1f}°, K: {k_szog_REL:.1f}°\n"
-        else:
-            text_str += f"{i+1}. Elérhetetlen\n"
+    try:
+        p_min_szog = float(text_box_piros_min.text)
+        p_max_szog = float(text_box_piros_max.text)
+        k_min_szog = float(text_box_kek_min.text)
+        k_max_szog = float(text_box_kek_max.text)
+    except ValueError:
+        print("Hiba: Érvénytelen szöghatárok a mezőkben.")
+        text_display.set_text("Hiba:\nÉrvénytelen szöghatárok\na mezőkben.")
+        fig.canvas.draw_idle()
+        return
 
+    for (x, y) in anim_pontok:
+        angles = solve_ik(x, y)
+        
+        # 1. Ellenőrzés
+        if angles is None:
+            is_valid = False
+            break
+            
+        p_szog, k_szog_REL = angles
+        
+        # 2. Ellenőrzés: A szöghatárokon belül van?
+        epsilon = 1e-6 
+        if not (p_min_szog - epsilon <= p_szog <= p_max_szog + epsilon):
+            is_valid = False
+            break
+        if not (k_min_szog - epsilon <= k_szog_REL <= k_max_szog + epsilon):
+            is_valid = False
+            break
+            
+        # Ha minden rendben, elmentjük
+        angle_data_list.append(angles)
+            
+    if not is_valid:
+        # Hiba esetén kiírjuk és leállítjunk
+        print("Animációs hiba: A vonal kívül esik a munkaterületen.")
+        text_display.set_text("Animációs hiba:\nA kijelölt vonal egy része\nkívül esik a munkaterületen.")
+        
+        if anim_obj and anim_obj.event_source:
+            anim_obj.event_source.stop()
+        anim_obj = None
+        fig.canvas.draw_idle()
+        return
+    # --- Ellenőrzés vége ---
+        
+    text_str = "Munkavonal szögei:\n\n"
+    for i, angles in enumerate(angle_data_list):
+        p_szog, k_szog_REL = angles
+        text_str += f"{i+1}. P: {p_szog:.1f}°, K: {k_szog_REL:.1f}°\n"
+            
     text_display.set_text(text_str)
     
-
+    #Animáció
     if anim_obj and anim_obj.event_source:
         anim_obj.event_source.stop()
         
@@ -301,7 +340,7 @@ def animate(frame):
     
     angles = angle_data_list[frame] 
     
-    if angles is None:
+    if angles is None: 
         return ()
         
     p_szog, k_szog_REL = angles
@@ -328,5 +367,5 @@ fig.canvas.mpl_connect('button_press_event', onclick)
 
 update_plot(None)
 
-#Eredmény:
+#megjelenítés
 plt.show()
